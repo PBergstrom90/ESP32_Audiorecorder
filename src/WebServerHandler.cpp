@@ -16,6 +16,37 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
     
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", "{\"status\":\"recording started\"}");
     response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response->addHeader("Access-Control-Allow-Headers", "Content-Type");
+    request->send(response);
+  });
+
+  server.on("/set-gain", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String value;
+    if (request->hasParam("value")) {
+      value = request->getParam("value")->value();
+      Serial.printf("Gain updated to: %s\n", value.c_str());
+
+      // Send success response with CORS headers
+      AsyncWebServerResponse *response = request->beginResponse(200, "application/json", "{\"status\":\"gain updated\"}");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      response->addHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      response->addHeader("Access-Control-Allow-Headers", "Content-Type");
+      request->send(response);
+    } else {
+      // Handle missing parameter case
+      AsyncWebServerResponse *response = request->beginResponse(400, "application/json", "{\"error\":\"Missing value parameter\"}");
+      response->addHeader("Access-Control-Allow-Origin", "*");
+      request->send(response);
+    }
+  });
+
+  // Handle CORS preflight OPTIONS request
+  server.on("/set-gain", HTTP_OPTIONS, [](AsyncWebServerRequest *request) {
+    AsyncWebServerResponse *response = request->beginResponse(200);
+    response->addHeader("Access-Control-Allow-Origin", "*");
+    response->addHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response->addHeader("Access-Control-Allow-Headers", "Content-Type");
     request->send(response);
   });
 

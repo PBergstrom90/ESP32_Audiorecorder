@@ -9,6 +9,7 @@ public:
     void loop();
     void sendAudioData(const uint8_t *data, size_t length);
     void sendEndMessage();
+    void webSocketEvent(WStype_t type, uint8_t *payload, size_t length);
 
 private:
     WebSocketsClient webSocket;
