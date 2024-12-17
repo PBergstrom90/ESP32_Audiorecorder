@@ -1,9 +1,33 @@
 #include <Arduino.h>
+#include "I2SMicrophone.h"
+#include "WebSocketHandler.h"
+#include "WebServerHandler.h"
+#include "config.h"
+
+I2SMicrophone microphone;           // I2S Microphone handler
+WebSocketHandler webSocketHandler;  // WebSocket handler
+WebServerHandler webServerHandler;  // Web server handler
 
 void setup() {
+  Serial.begin(115200);
+  delay(1000);
 
+  // Initialize WiFi
+  webServerHandler.connectToWiFi();
+
+  // Initialize WebSocket
+  webSocketHandler.begin();
+
+  // Initialize I2S microphone
+  microphone.setup();
+
+  // Start HTTP server
+  webServerHandler.begin(&microphone, &webSocketHandler);
+
+  Serial.println("--- SETUP COMPLETED ---");
 }
 
 void loop() {
-
+  webSocketHandler.loop();
+  delay(1);  // Prevent watchdog reset
 }
