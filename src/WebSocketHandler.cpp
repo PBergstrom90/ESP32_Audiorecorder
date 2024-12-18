@@ -1,8 +1,8 @@
 #include "WebSocketHandler.h"
 
 void WebSocketHandler::begin() {
-  webSocket.begin("192.168.50.30", 5001, "/");
-  webSocket.setReconnectInterval(5000);
+  webSocket.begin(HOST_SOCKET_IP, SOCKET_PORT_NUMBER, "/");
+  webSocket.setReconnectInterval(RECONNECT_INTERVAL);
   webSocket.onEvent([this](WStype_t type, uint8_t *payload, size_t length) {
     webSocketEvent(type, payload, length);
   });

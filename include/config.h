@@ -13,4 +13,9 @@
 #define BITS_PER_SAMPLE 16      // Bits per sample
 #define RECORD_DURATION_MS 5000 // Recording Duration (5 seconds)
 
+// WebSocket Configuration
+#define SOCKET_PORT_NUMBER 5001
+#define RECONNECT_INTERVAL 5000
+#define HOST_SOCKET_IP "192.168.50.30"
+
 #endif

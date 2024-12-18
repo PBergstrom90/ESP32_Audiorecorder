@@ -1,6 +1,10 @@
 #include "I2SMicrophone.h"
 
-I2SMicrophone::I2SMicrophone() {}
+I2SMicrophone::I2SMicrophone() : recording(false){}
+
+bool I2SMicrophone::isRecording() {
+    return recording;
+}
 
 void I2SMicrophone::setup() {
   const i2s_config_t i2s_config = {
@@ -32,7 +36,19 @@ void I2SMicrophone::setup() {
   Serial.println("I2S microphone initialized.");
 }
 
+size_t I2SMicrophone::readAudioData(int32_t *buffer, size_t bufferSize) {
+  size_t bytesRead = 0;
+  esp_err_t err = i2s_read(I2S_PORT, buffer, bufferSize, &bytesRead, portMAX_DELAY);
+  if (err != ESP_OK) {
+    Serial.printf("I2S read failed: %s\n", esp_err_to_name(err));
+  }
+  return bytesRead;
+}
+
 void I2SMicrophone::startRecording(WebSocketHandler *webSocket, float gain, uint32_t duration) {
+  if (recording) return;
+  recording = true;
+  
   gainFactor = gain;
   recordDurationMs = duration;
   webSocketHandler = webSocket;
@@ -66,6 +82,7 @@ void I2SMicrophone::recordingTask(void *parameter) {
   i2s_stop(I2S_NUM_0);
   mic->webSocketHandler->sendEndMessage();
   Serial.println("Recording finished.");
+  mic->recording = false;
   vTaskDelete(NULL);
 }
 
