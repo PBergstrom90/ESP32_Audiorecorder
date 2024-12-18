@@ -10,7 +10,7 @@ void ListeningMode::startListening() {
         webServerHandler->enableWiFiLightSleep();
         xTaskCreatePinnedToCore(listeningModeTask, "ListeningModeTask", 8192, this, 1, NULL, 1);
         Serial.println("Listening mode started.");
-        } else {
+    } else {
         Serial.println("Listening mode already active.");
     }
 }
@@ -23,7 +23,7 @@ void ListeningMode::stopListening() {
 
 void ListeningMode::setThreshold(float threshold) {
     noiseThreshold = threshold;
-    Serial.printf("Noise threshold set to: %.2f\n", noiseThreshold);
+    Serial.printf("Noise threshold set to: %.2f\n", threshold);
 }
 
 void ListeningMode::processAudioData() {
@@ -45,12 +45,16 @@ void ListeningMode::processAudioData() {
                 while (microphone->isRecording()) {
                     vTaskDelay(100 / portTICK_PERIOD_MS);
                 }
-                if (isListening) {
-                    Serial.println("Recording completed, resuming listening mode.");
-                    return;
-                } else {
-                    Serial.println("Recording completed, staying idle in manual mode.");
+
+                Serial.println("Recording completed.");
+                webServerHandler->enableWiFiLightSleep();
+
+                if (!isListening) {
+                    Serial.println("Listening mode terminated.");
+                    break;
                 }
+
+                Serial.println("Resuming listening mode.");
             }
         }
     }
@@ -68,5 +72,7 @@ float ListeningMode::calculateRMS(const int32_t *samples, size_t count) {
 void ListeningMode::listeningModeTask(void *parameter) {
     ListeningMode *listeningMode = static_cast<ListeningMode *>(parameter);
     listeningMode->processAudioData();
+    listeningMode->isListening = false; // Reset the flag
+    Serial.println("Listening task terminated.");
     vTaskDelete(NULL);
 }
