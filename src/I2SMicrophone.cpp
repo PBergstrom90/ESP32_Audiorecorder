@@ -53,13 +53,13 @@ void I2SMicrophone::startRecording(WebSocketHandler *webSocket, float gain, uint
   recordDurationMs = duration;
   webSocketHandler = webSocket;
 
-  xTaskCreatePinnedToCore(recordingTask, "RecordingTask", 8192, this, 1, NULL, 1);
+  xTaskCreatePinnedToCore(recordingTask, "RecordingTask", 8192, this, 1, NULL, 0);
 }
 
 void I2SMicrophone::recordingTask(void *parameter) {
   I2SMicrophone *mic = static_cast<I2SMicrophone *>(parameter);
   uint8_t frameBuffer[128];
-  int32_t sampleBuffer[64];
+  int32_t sampleBuffer[64]; 
 
   Serial.println("Starting recording...");
   mic->warmUp();
@@ -67,6 +67,7 @@ void I2SMicrophone::recordingTask(void *parameter) {
   unsigned long start = millis();
   i2s_start(I2S_NUM_0);
   Serial.println("Recording...");
+  mic->webSocketHandler->sendStartMessage();
   while (millis() - start < mic->recordDurationMs) {
     size_t bytesRead;
     if (i2s_read(I2S_NUM_0, sampleBuffer, sizeof(sampleBuffer), &bytesRead, portMAX_DELAY) == ESP_OK) {
@@ -90,4 +91,10 @@ void I2SMicrophone::warmUp() {
   Serial.println("Warming up microphone...");
   delay(1000);  // Simple warm-up phase
   Serial.println("Warm up done. Microphone ready.");
+}
+
+void I2SMicrophone::reset() {
+    i2s_stop(I2S_NUM_0);
+    i2s_start(I2S_NUM_0);
+    Serial.println("I2S peripheral reset.");
 }

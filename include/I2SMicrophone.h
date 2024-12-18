@@ -12,6 +12,7 @@ public:
     size_t readAudioData(int32_t *buffer, size_t bufferSize);
     void startRecording(WebSocketHandler *webSocket, float gain, uint32_t duration);
     bool isRecording();
+    void reset();
 
 private:
     void warmUp();

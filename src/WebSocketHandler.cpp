@@ -19,6 +19,13 @@ void WebSocketHandler::sendAudioData(const uint8_t *data, size_t length) {
   }
 }
 
+void WebSocketHandler::sendStartMessage() {
+  if (webSocket.isConnected()) {
+    webSocket.sendTXT("START");
+    Serial.println("Sent START message.");
+  }
+}
+
 void WebSocketHandler::sendEndMessage() {
   if (webSocket.isConnected()) {
     webSocket.sendTXT("END");
