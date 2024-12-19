@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include "I2SMicrophone.h"
 #include "WebSocketHandler.h"
 #include "WebServerHandler.h"
@@ -12,7 +13,10 @@ ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); 
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  unsigned long startTime = millis();
+  while (millis() - startTime < 1000) {
+      yield();
+  }
   webServerHandler.connectToWiFi();
   webSocketHandler.begin();
   microphone.setup();
@@ -23,5 +27,5 @@ void setup() {
 
 void loop() {
   webSocketHandler.loop();
-  delay(1);  // Prevent watchdog reset
+  esp_task_wdt_reset();  // Feed the watchdog
 }
