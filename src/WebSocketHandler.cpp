@@ -37,7 +37,8 @@ void WebSocketHandler::webSocketEvent(WStype_t type, uint8_t *payload, size_t le
   switch (type) {
     case WStype_CONNECTED:
       Serial.println("WebSocket connected to server.");
-      webSocket.sendTXT("TYPE:ESP32"); // Send identification message
+      // Send identification message
+      webSocket.sendTXT("TYPE:ESP32");
       break;
 
     case WStype_DISCONNECTED:

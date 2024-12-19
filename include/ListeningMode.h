@@ -9,13 +9,6 @@
 class WebServerHandler;
 
 class ListeningMode {
-private:
-    I2SMicrophone *microphone;
-    WebSocketHandler *webSocketHandler;
-    WebServerHandler *webServerHandler;
-    float noiseThreshold;
-    bool isListening;
-
 public:
     ListeningMode(I2SMicrophone *mic, WebSocketHandler *ws, WebServerHandler *webServer);
     void startListening();
@@ -26,6 +19,11 @@ private:
     void processAudioData();
     float calculateRMS(const int32_t *samples, size_t count);
     static void listeningModeTask(void *parameter);
+    I2SMicrophone *microphone;
+    WebSocketHandler *webSocketHandler;
+    WebServerHandler *webServerHandler;
+    TaskHandle_t listeningTaskHandle = NULL;
+    float noiseThreshold;
 };
 
 #endif // LISTENING_MODE_H

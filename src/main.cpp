@@ -13,17 +13,9 @@ ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-
-  // Initialize WiFi
   webServerHandler.connectToWiFi();
-
-  // Initialize WebSocket
   webSocketHandler.begin();
-
-  // Initialize I2S microphone
   microphone.setup();
-
-  // Start HTTP server
   webServerHandler.begin(&microphone, &webSocketHandler);
 
   Serial.println("--- SETUP COMPLETED ---");
