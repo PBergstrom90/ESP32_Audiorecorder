@@ -57,34 +57,37 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
         request->send(response);
     });
 
-    server.on("/toggle-mode", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        if (request->hasParam("mode")) {
-            String mode = request->getParam("mode")->value();
-            String responseMessage;
+server.on("/toggle-mode", HTTP_GET, [this, ws](AsyncWebServerRequest *request) {
+    if (request->hasParam("mode")) {
+        String mode = request->getParam("mode")->value();
+        String responseMessage;
 
-            if (mode == "automatic") {
-                listeningMode.startListening();
-                responseMessage = "{\"status\":\"Listening mode enabled.\"}";
-            } else if (mode == "manual") {
-                listeningMode.stopListening();
-                responseMessage = "{\"status\":\"Manual mode enabled.\"}";
-            } else {
-                responseMessage = "{\"error\":\"Invalid mode.\"}";
-                AsyncWebServerResponse *response = request->beginResponse(400, "application/json", responseMessage);
-                addCORSHeaders(response);
-                request->send(response);
-                return;
-            }
-
-            AsyncWebServerResponse *response = request->beginResponse(200, "application/json", responseMessage);
-            addCORSHeaders(response);
-            request->send(response);
+        if (mode == "automatic") {
+            listeningMode.startListening();
+            responseMessage = "MODE:automatic";
+            ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket
+        } else if (mode == "manual") {
+            listeningMode.stopListening();
+            responseMessage = "MODE:manual";
+            ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket
         } else {
-            AsyncWebServerResponse *response = request->beginResponse(400, "application/json", "{\"error\":\"Mode parameter missing.\"}");
+            responseMessage = "ERROR:Invalid mode";
+            AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", responseMessage);
             addCORSHeaders(response);
             request->send(response);
+            Serial.println("Invalid mode parameter received.");
+            return;
         }
-    });
+        AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", responseMessage);
+        addCORSHeaders(response);
+        request->send(response);
+    } else {
+        AsyncWebServerResponse *response = request->beginResponse(400, "application/json", "{\"error\":\"Mode parameter missing.\"}");
+        addCORSHeaders(response);
+        request->send(response);
+        Serial.println("Mode parameter missing.");
+    }
+});
 
     server.on("/toggle-mode", HTTP_OPTIONS, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(200);

@@ -33,6 +33,20 @@ void WebSocketHandler::sendEndMessage() {
   }
 }
 
+void WebSocketHandler::sendModeMessage(const String &mode) {
+  if (webSocket.isConnected()) {
+    if (mode == "automatic" || mode == "manual") {
+      String message = "MODE:" + mode;
+      webSocket.sendTXT(message);
+      Serial.println("Sent MODE message: " + message);
+    } else {
+      Serial.println("ERROR: Invalid mode. MODE message not sent.");
+    }
+  } else {
+    Serial.println("WebSocket not connected. MODE message not sent.");
+  }
+}
+
 void WebSocketHandler::webSocketEvent(WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
