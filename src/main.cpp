@@ -14,12 +14,22 @@ ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); 
 
 void setup() {
   Serial.begin(115200);
-  LittleFS.begin();
   if (!LittleFS.begin()) {
     Serial.println("Failed to initialize LittleFS");
-    while (true);
   }
-  Serial.println("LittleFS initialized");
+  // Check for certificate existence
+  if (!LittleFS.exists("/certs/ca.crt") || 
+      !LittleFS.exists("/certs/esp32.crt") || 
+      !LittleFS.exists("/certs/esp32.key")) {
+      Serial.println("ERROR: Missing certificate file(s)");
+      delay(1000);
+      ESP.restart();
+    }
+
+  // Load certificates from LittleFS
+  webSocketHandler.readCertFile("/certs/ca.crt", webSocketHandler.ca_cert_str);
+  webSocketHandler.readCertFile("/certs/esp32.crt", webSocketHandler.client_cert_str);
+  webSocketHandler.readCertFile("/certs/esp32.key", webSocketHandler.client_key_str);
   
   unsigned long startTime = millis();
   while (millis() - startTime < 1000) {
@@ -27,9 +37,6 @@ void setup() {
   }
   
   webServerHandler.connectToWiFi();
-  if (!webSocketHandler.setCACertFromFile("/certs/ca.crt")) {
-    Serial.println("SSL ERROR: No valid CA cert loaded.");
-  }
   webSocketHandler.begin();
   
   microphone.setup();

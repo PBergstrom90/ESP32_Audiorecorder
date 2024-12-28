@@ -1,7 +1,11 @@
 #include "WebSocketHandler.h"
 
 void WebSocketHandler::begin() {
-  webSocket.beginSslWithCA(HOST_SOCKET_IP, SOCKET_PORT_NUMBER, "/ws", "/certs/ca.crt");
+  wifiClient.setCACert(ca_cert_str.c_str());
+  wifiClient.setCertificate(client_cert_str.c_str());
+  wifiClient.setPrivateKey(client_key_str.c_str());
+  
+  webSocket.beginSslWithCA(HOST_SOCKET_IP, SOCKET_PORT_NUMBER, "/ws/", ca_cert_str.c_str());
   webSocket.setReconnectInterval(RECONNECT_INTERVAL);
   webSocket.onEvent([this](WStype_t type, uint8_t *payload, size_t length) {
     webSocketEvent(type, payload, length);
@@ -9,25 +13,20 @@ void WebSocketHandler::begin() {
   Serial.println("WebSocket initialized.");
 }
 
-bool WebSocketHandler::setCACertFromFile(const char *path) {
-    File caCertFile = LittleFS.open(path, "r");
-    if (!caCertFile) {
-        Serial.printf("Failed to open CA cert file: %s\n", path);
-        return false;
+void WebSocketHandler::readCertFile(const char *path, String &dest) {
+    File file = LittleFS.open(path, "r");
+    if (!file) {
+        Serial.printf("Failed to open file: %s\n", path);
+        return;
     }
 
-    String caCertString = caCertFile.readString();
-    caCertFile.close();
-
-    if (caCertString.length() == 0) {
-        Serial.printf("CA cert file %s is empty.\n", path);
-        return false;
+    dest = "";
+    while (file.available()) {
+        dest += char(file.read());
     }
+    file.close();
 
-    Serial.println("Loaded CA Cert:");
-    Serial.println(caCertString.substring(0, 100));
-
-    return true;
+    Serial.printf("Successfully read file: %s\n", path);
 }
 
 void WebSocketHandler::loop() {

@@ -14,10 +14,15 @@ public:
     void sendStartMessage();
     void sendEndMessage();
     void sendModeMessage(const String &mode);
-    bool setCACertFromFile(const char *path);
+    void readCertFile(const char *path, String &dest);
+
+    String ca_cert_str;
+    String client_cert_str;
+    String client_key_str;
 
 private:
     WebSocketsClient webSocket;
+    WiFiClientSecure wifiClient;
     void webSocketEvent(WStype_t type, uint8_t *payload, size_t length);
 };
 
