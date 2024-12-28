@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
+#include <LittleFS.h>
 #include "I2SMicrophone.h"
 #include "WebSocketHandler.h"
 #include "WebServerHandler.h"
@@ -13,15 +14,27 @@ ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); 
 
 void setup() {
   Serial.begin(115200);
+  LittleFS.begin();
+  if (!LittleFS.begin()) {
+    Serial.println("Failed to initialize LittleFS");
+    while (true);
+  }
+  Serial.println("LittleFS initialized");
+  
   unsigned long startTime = millis();
   while (millis() - startTime < 1000) {
       yield();
   }
+  
   webServerHandler.connectToWiFi();
+  if (!webSocketHandler.setCACertFromFile("/certs/ca.crt")) {
+    Serial.println("SSL ERROR: No valid CA cert loaded.");
+  }
   webSocketHandler.begin();
+  
   microphone.setup();
+  
   webServerHandler.begin(&microphone, &webSocketHandler);
-
   Serial.println("--- SETUP COMPLETED ---");
 }
 

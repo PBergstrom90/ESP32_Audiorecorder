@@ -14,8 +14,8 @@
 #define RECORD_DURATION_MS 5000 // Recording Duration (5 seconds)
 
 // WebSocket Configuration
-#define SOCKET_PORT_NUMBER 5001
-#define RECONNECT_INTERVAL 5000
+#define SOCKET_PORT_NUMBER 443
+#define RECONNECT_INTERVAL 5000 // Milliseconds
 #define HOST_SOCKET_IP "192.168.50.30"
 
 #endif

@@ -20,7 +20,7 @@ public:
     void disableWiFiLightSleep();
 
 private:
-    AsyncWebServer server{80}; // Initialize with port number 80
+    AsyncWebServer server{80};
 };
 
 #endif // WEBSERVER_HANDLER_H

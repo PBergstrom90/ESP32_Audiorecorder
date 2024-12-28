@@ -1,12 +1,33 @@
 #include "WebSocketHandler.h"
 
 void WebSocketHandler::begin() {
-  webSocket.begin(HOST_SOCKET_IP, SOCKET_PORT_NUMBER, "/");
+  webSocket.beginSslWithCA(HOST_SOCKET_IP, SOCKET_PORT_NUMBER, "/ws", "/certs/ca.crt");
   webSocket.setReconnectInterval(RECONNECT_INTERVAL);
   webSocket.onEvent([this](WStype_t type, uint8_t *payload, size_t length) {
     webSocketEvent(type, payload, length);
   });
   Serial.println("WebSocket initialized.");
+}
+
+bool WebSocketHandler::setCACertFromFile(const char *path) {
+    File caCertFile = LittleFS.open(path, "r");
+    if (!caCertFile) {
+        Serial.printf("Failed to open CA cert file: %s\n", path);
+        return false;
+    }
+
+    String caCertString = caCertFile.readString();
+    caCertFile.close();
+
+    if (caCertString.length() == 0) {
+        Serial.printf("CA cert file %s is empty.\n", path);
+        return false;
+    }
+
+    Serial.println("Loaded CA Cert:");
+    Serial.println(caCertString.substring(0, 100));
+
+    return true;
 }
 
 void WebSocketHandler::loop() {
