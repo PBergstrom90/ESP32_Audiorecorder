@@ -5,8 +5,11 @@
 #include "WebSocketHandler.h"
 #include "config.h"
 
+class WebSocketHandler;
+
 enum class MicrophoneState {
     IDLE,
+    WARMUP,
     RECORDING,
     LISTENING,
     ERROR
@@ -26,12 +29,9 @@ public:
     void warmUp();
     void reset();
     bool initializeHardware();
-    bool getDeferredReset() const { return deferredReset; }
-    void setDeferredReset(bool value) { deferredReset = value; }
 
 private:
     float gainFactor = 0.3; 
-    bool deferredReset = false;
     uint16_t recordDurationMs = RECORD_DURATION_MS; 
     WebSocketHandler *webSocketHandler;
     MicrophoneState currentState;

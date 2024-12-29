@@ -14,6 +14,7 @@ void I2SMicrophone::setState(MicrophoneState state) {
 const char* I2SMicrophone::getStateName(MicrophoneState state) {
     switch (state) {
         case MicrophoneState::IDLE: return "IDLE";
+        case MicrophoneState::WARMUP: return "WARMUP";
         case MicrophoneState::RECORDING: return "RECORDING";
         case MicrophoneState::LISTENING: return "LISTENING";
         case MicrophoneState::ERROR: return "ERROR";
@@ -70,30 +71,43 @@ void I2SMicrophone::startRecording(WebSocketHandler *webSocket, float gain, uint
       Serial.println("Already recording. Cannot start a new recording.");
       return;
     }
+    if (recordingTaskHandle != NULL) {
+        Serial.println("Previous recording task is still active. Cannot start a new recording.");
+        return;
+    }
 
     gainFactor = gain;
     recordDurationMs = duration;
     webSocketHandler = webSocket;
 
     recordingTaskHandle = NULL;
-    BaseType_t result = xTaskCreatePinnedToCore(recordingTask, "RecordingTask", 8192, this, 1, &recordingTaskHandle, 0);
+    BaseType_t result = xTaskCreatePinnedToCore(recordingTask, "RecordingTask", 12288, this, 3, &recordingTaskHandle, 0);
     if (result != pdPASS) {
         Serial.println("Failed to create recording task!");
         setState(MicrophoneState::ERROR);
         recoverFromError();
         return;
     }
-    setState(MicrophoneState::RECORDING);
 }
 
 void I2SMicrophone::recordingTask(void *parameter) {
     I2SMicrophone *mic = static_cast<I2SMicrophone *>(parameter);
-    uint8_t frameBuffer[128];
-    int32_t sampleBuffer[64];
+    mic->reset();
+    uint8_t frameBuffer[256];
+    int32_t sampleBuffer[128];
+    if (frameBuffer == nullptr) {
+        Serial.println("ERROR: Failed to allocate memory for frameBuffer.");
+        return;
+    } else if (sampleBuffer == nullptr) {
+        Serial.println("ERROR: Failed to allocate memory for sampleBuffer.");
+        return;
+    }
 
     Serial.println("Starting recording...");
+    mic->setState(MicrophoneState::WARMUP);
     mic->warmUp();
 
+    mic->setState(MicrophoneState::RECORDING);
     unsigned long start = millis();
     i2s_start(I2S_NUM_0);
     Serial.println("Recording...");
@@ -115,14 +129,10 @@ void I2SMicrophone::recordingTask(void *parameter) {
     i2s_stop(I2S_NUM_0);
     mic->webSocketHandler->sendEndMessage();
     Serial.println("Recording finished.");
-
-   if (mic->getDeferredReset()) {
-      Serial.println("Performing deferred reset after recording.");
-      mic->reset();
-      mic->setDeferredReset(false);
-    }
-
+    
+    mic->reset();
     mic->setState(MicrophoneState::IDLE);
+    mic->recordingTaskHandle = NULL;
     vTaskDelete(NULL);
 }
 
@@ -133,7 +143,6 @@ void I2SMicrophone::recoverFromError() {
     }
 
     Serial.println("Attempting to recover from ERROR state...");
-    
     reset();
 
     if (initializeHardware()) { 
@@ -161,12 +170,19 @@ bool I2SMicrophone::initializeHardware() {
 
 void I2SMicrophone::warmUp() {
     Serial.println("Warming up microphone...");
+
     int32_t sampleBuffer[64] = {0};
     const uint8_t WARM_UP_PASSES = 10;
 
     for (int i = 0; i < WARM_UP_PASSES; i++) {
         memset(sampleBuffer, 0, sizeof(sampleBuffer));
         size_t bytesRead = readAudioData(sampleBuffer, sizeof(sampleBuffer));
+        Serial.printf("Warm-up pass %d: %d bytes read\n", i + 1, bytesRead);
+        if (bytesRead == 0) {
+            Serial.println("ERROR: Warm-up failed. Hardware not responding.");
+            setState(MicrophoneState::ERROR);
+            return;
+        }
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     Serial.println("Warm-up phase completed. Microphone ready.");

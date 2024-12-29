@@ -17,5 +17,6 @@
 #define SOCKET_PORT_NUMBER 443
 #define RECONNECT_INTERVAL 5000 // Milliseconds
 #define HOST_SOCKET_IP "192.168.50.30"
+#define WEBSOCKET_BUFFER_SIZE 1024
 
 #endif

@@ -32,8 +32,7 @@ void ListeningMode::startListening() {
 void ListeningMode::stopListening() {
     if (microphone->getState() == MicrophoneState::RECORDING) {
         Serial.println("Recording in progress. Deferring reset until recording completes.");
-        // Set a deferred reset flag
-        microphone->setDeferredReset(true);
+        microphone->reset();
         return;
     }
     if (listeningTaskHandle != NULL) {

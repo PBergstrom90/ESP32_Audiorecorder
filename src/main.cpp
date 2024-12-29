@@ -12,6 +12,13 @@ WebSocketHandler webSocketHandler;  // WebSocket handler
 WebServerHandler webServerHandler;  // Web server handler
 ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); // Listening mode handler
 
+// DEBUG: Heap info print interval
+unsigned long lastHeapPrintTime = 0;
+const unsigned long heapPrintInterval = 5000; 
+void printHeapInfo() {
+  Serial.printf("Free heap: %d bytes\n", xPortGetFreeHeapSize());
+}
+
 void setup() {
   Serial.begin(115200);
   if (!LittleFS.begin()) {
@@ -40,6 +47,7 @@ void setup() {
   webSocketHandler.begin();
   
   microphone.setup();
+  webSocketHandler.setMicrophone(&microphone);
   
   webServerHandler.begin(&microphone, &webSocketHandler);
   Serial.println("--- SETUP COMPLETED ---");
@@ -48,4 +56,11 @@ void setup() {
 void loop() {
   webSocketHandler.loop();
   esp_task_wdt_reset();  // Feed the watchdog
+
+  // DEBUG: Print heap info
+  if (millis() - lastHeapPrintTime >= heapPrintInterval) {
+    lastHeapPrintTime = millis();
+    printHeapInfo();
+  }
+
 }
