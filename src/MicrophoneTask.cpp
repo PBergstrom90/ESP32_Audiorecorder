@@ -30,7 +30,6 @@ void MicrophoneTask::taskFunction(void* param) {
 
 void MicrophoneTask::run() {
     Serial.println("Microphone Controller Task started.");
-
     while (true) {
         SystemMode currentMode = mic->systemStateManager->getMode();
         if (currentMode == SystemMode::AUTOMATIC) {
@@ -40,7 +39,6 @@ void MicrophoneTask::run() {
             }
             int32_t sampleBuffer[64] = {0};
             size_t bytesRead = mic->readAudioData(sampleBuffer, sizeof(sampleBuffer));
-
             if (bytesRead > 0) {
                 float rms = mic->calculateRMS(sampleBuffer, bytesRead / 4);
                 if (rms > 1.0f) {
@@ -52,7 +50,6 @@ void MicrophoneTask::run() {
                     performRecording();
                 }
             }
-
         } else { // MANUAL mode
             if (mic->manualRecordingRequested) {
                 mic->manualRecordingRequested = false;
@@ -97,5 +94,6 @@ void MicrophoneTask::performRecording() {
     ws->sendEndMessage();
     Serial.println("Recording finished.");
     mic->reset();
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay to avoid immediate recording
     mic->setState(MicrophoneState::IDLE);
 }
