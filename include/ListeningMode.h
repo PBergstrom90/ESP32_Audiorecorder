@@ -4,13 +4,14 @@
 #include <cmath>
 #include "I2SMicrophone.h"
 #include "WebSocketHandler.h"
+#include "SystemStateManager.h"
 #include "config.h"
 
 class WebServerHandler;
 
 class ListeningMode {
 public:
-    ListeningMode(I2SMicrophone *mic, WebSocketHandler *ws, WebServerHandler *webServer);
+    ListeningMode(I2SMicrophone *mic, WebSocketHandler *ws, WebServerHandler *webServer, SystemStateManager *stateManager);
     void startListening();
     void stopListening();
     void setThreshold(float threshold);
@@ -22,6 +23,7 @@ private:
     I2SMicrophone *microphone;
     WebSocketHandler *webSocketHandler;
     WebServerHandler *webServerHandler;
+    SystemStateManager *systemStateManager;
     TaskHandle_t listeningTaskHandle = NULL;
     float noiseThreshold;
 };

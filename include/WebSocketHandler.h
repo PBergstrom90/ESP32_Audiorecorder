@@ -5,6 +5,7 @@
 #include <WifiClientSecure.h>
 #include <LittleFS.h>
 #include "I2SMicrophone.h"
+#include "SystemStateManager.h"
 #include "config.h"
 
 class I2SMicrophone;

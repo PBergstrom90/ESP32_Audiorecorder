@@ -28,7 +28,7 @@ void WebServerHandler::disableWiFiLightSleep() {
 
 void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
     server.on("/start-record", HTTP_GET, [this, mic, ws](AsyncWebServerRequest *request) {
-        mic->startRecording(ws, 0.3, RECORD_DURATION_MS); // Default 0.3 gain, 5 sec
+        mic->startRecording(ws, GAIN_VALUE, RECORD_DURATION_MS); // Default 0.3 gain, 5 sec
 
         AsyncWebServerResponse *response = request->beginResponse(200, "application/json", "{\"status\":\"recording started\"}");
         addCORSHeaders(response);
@@ -61,12 +61,20 @@ server.on("/toggle-mode", HTTP_GET, [this, ws](AsyncWebServerRequest *request) {
     if (request->hasParam("mode")) {
         String mode = request->getParam("mode")->value();
         String responseMessage;
-
+        
+        if ((mode == "automatic" && systemStateManager.isAutomaticMode()) ||
+            (mode == "manual" && systemStateManager.isManualMode())) {
+            responseMessage = "MODE:confirmed";
+            request->send(200, "text/plain", responseMessage);
+            return;
+        }
         if (mode == "automatic") {
+            systemStateManager.setMode(SystemMode::AUTOMATIC);
             listeningMode.startListening();
             responseMessage = "MODE:automatic";
             ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket
         } else if (mode == "manual") {
+            systemStateManager.setMode(SystemMode::MANUAL);
             listeningMode.stopListening();
             responseMessage = "MODE:manual";
             ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket

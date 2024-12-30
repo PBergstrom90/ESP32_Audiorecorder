@@ -3,9 +3,11 @@
 
 #include <driver/i2s.h>
 #include "WebSocketHandler.h"
+#include "SystemStateManager.h"
 #include "config.h"
 
 class WebSocketHandler;
+class SystemStateManager;
 
 enum class MicrophoneState {
     IDLE,
@@ -31,8 +33,11 @@ public:
     bool initializeHardware();
 
 private:
-    float gainFactor = 0.3; 
+    float gainFactor = GAIN_VALUE; 
+    SemaphoreHandle_t stateMutex;
+    SemaphoreHandle_t i2sLock;
     uint16_t recordDurationMs = RECORD_DURATION_MS; 
+    SystemStateManager *systemStateManager;
     WebSocketHandler *webSocketHandler;
     MicrophoneState currentState;
     TaskHandle_t recordingTaskHandle = NULL;

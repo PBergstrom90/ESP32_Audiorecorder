@@ -1,14 +1,27 @@
 #include "I2SMicrophone.h"
 
-I2SMicrophone::I2SMicrophone() : currentState(MicrophoneState::IDLE) {}
+I2SMicrophone::I2SMicrophone() : currentState(MicrophoneState::IDLE) {
+    stateMutex = xSemaphoreCreateMutex();
+    i2sLock = xSemaphoreCreateBinary();
+    xSemaphoreGive(i2sLock);
+}
 
 MicrophoneState I2SMicrophone::getState() {
-    return currentState;
+    MicrophoneState state;
+        if (xSemaphoreTake(stateMutex, portMAX_DELAY)) {
+            state = currentState;
+            xSemaphoreGive(stateMutex);
+        }
+        return state;
 }
 
 void I2SMicrophone::setState(MicrophoneState state) {
-    currentState = state;
-    Serial.printf("Microphone state changed to: %s\n", getStateName(state));
+    if (xSemaphoreTake(stateMutex, portMAX_DELAY)) {
+            currentState = state;
+            xSemaphoreGive(stateMutex);
+            Serial.printf("Microphone state changed to: %s\n", getStateName(state));
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
 }
 
 const char* I2SMicrophone::getStateName(MicrophoneState state) {
@@ -54,12 +67,17 @@ void I2SMicrophone::setup() {
 }
 
 size_t I2SMicrophone::readAudioData(int32_t *buffer, size_t bufferSize) {
-  size_t bytesRead = 0;
-  esp_err_t err = i2s_read(I2S_PORT, buffer, bufferSize, &bytesRead, portMAX_DELAY);
-  if (err != ESP_OK) {
-    Serial.printf("I2S read failed: %s\n", esp_err_to_name(err));
-  }
-  return bytesRead;
+    size_t bytesRead = 0;
+    if (xSemaphoreTake(i2sLock, portMAX_DELAY)) {
+        esp_err_t err = i2s_read(I2S_NUM_0, buffer, bufferSize, &bytesRead, portMAX_DELAY);
+        xSemaphoreGive(i2sLock);
+        if (err != ESP_OK) {
+            Serial.printf("I2S read failed: %s\n", esp_err_to_name(err));
+        }
+    } else {
+        Serial.println("Failed to acquire I2S lock for reading audio data.");
+    }
+    return bytesRead;
 }
 
 void I2SMicrophone::startRecording(WebSocketHandler *webSocket, float gain, uint32_t duration) {
@@ -70,6 +88,10 @@ void I2SMicrophone::startRecording(WebSocketHandler *webSocket, float gain, uint
     if (currentState == MicrophoneState::RECORDING) {
       Serial.println("Already recording. Cannot start a new recording.");
       return;
+    }
+    if (currentState == MicrophoneState::LISTENING) {
+        Serial.println("Pausing listening task for recording.");
+        setState(MicrophoneState::IDLE);
     }
     if (recordingTaskHandle != NULL) {
         Serial.println("Previous recording task is still active. Cannot start a new recording.");
@@ -129,11 +151,13 @@ void I2SMicrophone::recordingTask(void *parameter) {
     i2s_stop(I2S_NUM_0);
     mic->webSocketHandler->sendEndMessage();
     Serial.println("Recording finished.");
-    
-    mic->reset();
     mic->setState(MicrophoneState::IDLE);
+    mic->reset();
     mic->recordingTaskHandle = NULL;
     vTaskDelete(NULL);
+    if (mic->systemStateManager->getMode() == SystemMode::AUTOMATIC) {
+        mic->setState(MicrophoneState::LISTENING);
+    }
 }
 
 void I2SMicrophone::recoverFromError() {
@@ -170,9 +194,7 @@ bool I2SMicrophone::initializeHardware() {
 
 void I2SMicrophone::warmUp() {
     Serial.println("Warming up microphone...");
-
     int32_t sampleBuffer[64] = {0};
-    const uint8_t WARM_UP_PASSES = 10;
 
     for (int i = 0; i < WARM_UP_PASSES; i++) {
         memset(sampleBuffer, 0, sizeof(sampleBuffer));
@@ -189,7 +211,12 @@ void I2SMicrophone::warmUp() {
 }
 
 void I2SMicrophone::reset() {
-    i2s_stop(I2S_NUM_0);
-    i2s_start(I2S_NUM_0);
-    Serial.println("I2S peripheral reset.");
+    if (xSemaphoreTake(i2sLock, portMAX_DELAY)) {
+        i2s_stop(I2S_NUM_0);
+        i2s_start(I2S_NUM_0);
+        Serial.println("I2S peripheral reset.");
+        xSemaphoreGive(i2sLock);
+    } else {
+        Serial.println("Failed to acquire I2S lock for reset.");
+    }
 }

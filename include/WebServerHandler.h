@@ -6,10 +6,12 @@
 #include "I2SMicrophone.h"
 #include "WebSocketHandler.h"
 #include "ListeningMode.h"
+#include "SystemStateManager.h"
 #include "config.h"
 #include "secrets.h"
 
 extern ListeningMode listeningMode;
+extern SystemStateManager systemStateManager;
 
 class WebServerHandler {
 public:

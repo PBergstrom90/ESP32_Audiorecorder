@@ -5,12 +5,14 @@
 #include "WebSocketHandler.h"
 #include "WebServerHandler.h"
 #include "ListeningMode.h"
+#include "SystemStateManager.h"
 #include "config.h"
 
 I2SMicrophone microphone;           // I2S Microphone handler
 WebSocketHandler webSocketHandler;  // WebSocket handler
 WebServerHandler webServerHandler;  // Web server handler
-ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler); // Listening mode handler
+SystemStateManager systemStateManager; // System state manager
+ListeningMode listeningMode(&microphone, &webSocketHandler, &webServerHandler, &systemStateManager); // Listening mode handler
 
 // DEBUG: Heap info print interval
 unsigned long lastHeapPrintTime = 0;
@@ -57,10 +59,9 @@ void loop() {
   webSocketHandler.loop();
   esp_task_wdt_reset();  // Feed the watchdog
 
-  // DEBUG: Print heap info
+  /* DEBUG: Print heap info
   if (millis() - lastHeapPrintTime >= heapPrintInterval) {
     lastHeapPrintTime = millis();
     printHeapInfo();
-  }
-
+  } */
 }

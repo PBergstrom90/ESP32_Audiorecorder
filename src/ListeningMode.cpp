@@ -1,31 +1,37 @@
 #include "ListeningMode.h"
 #include "WebServerHandler.h"
 
-ListeningMode::ListeningMode(I2SMicrophone *mic, WebSocketHandler *ws, WebServerHandler *webServer)
-    : microphone(mic), webSocketHandler(ws), webServerHandler(webServer), noiseThreshold(4.0) {}
+ListeningMode::ListeningMode(I2SMicrophone *mic, WebSocketHandler *ws, WebServerHandler *webServer, SystemStateManager *stateManager)
+    : microphone(mic), webSocketHandler(ws), webServerHandler(webServer), systemStateManager(stateManager), noiseThreshold(NOISE_THRESHOLD) {}
 
 void ListeningMode::startListening() {
     if (listeningTaskHandle != NULL) {
-        Serial.println("Listening task already running. Terminating...");
-        vTaskDelete(listeningTaskHandle);
-        listeningTaskHandle = NULL;
+        if (microphone->getState() == MicrophoneState::LISTENING) {
+            Serial.println("Listening task already running. No action taken.");
+            return;
+        } else {
+            Serial.println("Stopping previous listening task...");
+            stopListening();
+        }
     }
     if (microphone->getState() != MicrophoneState::IDLE) {
-        Serial.println("Cannot start listening. Microphone is not in IDLE state.");
+        Serial.println("Cannot start listening. Microphone not IDLE.");
         return;
     }
+
     microphone->reset();
     microphone->setState(MicrophoneState::LISTENING);
     webServerHandler->enableWiFiLightSleep();
+
     BaseType_t result = xTaskCreatePinnedToCore(listeningModeTask, "ListeningModeTask", 8192, this, 1, &listeningTaskHandle, 1);
     if (result != pdPASS) {
         Serial.println("Failed to create ListeningModeTask!");
         microphone->setState(MicrophoneState::ERROR);
         microphone->recoverFromError();
-        return;
     } else {
-        Serial.printf("Listening task created. Task handle: %p\n", listeningTaskHandle);
+        Serial.printf("Listening task created. Handle: %p\n", listeningTaskHandle);
     }
+
     Serial.println("Listening mode started.");
 }
 
@@ -61,8 +67,12 @@ void ListeningMode::processAudioData() {
         Serial.println("ERROR reading audio data. Transitioning to ERROR state.");
         microphone->setState(MicrophoneState::ERROR);
         microphone->recoverFromError();
+        if (systemStateManager->getMode() == SystemMode::AUTOMATIC) {
+                startListening(); // Retry listening
+            }
         break;
     }
+    
     if (bytesRead > 0) {
         float rms = 0;
         rms = calculateRMS(sampleBuffer, bytesRead / 4);
@@ -71,8 +81,9 @@ void ListeningMode::processAudioData() {
         }
         if (rms > noiseThreshold) {
             Serial.println("Noise detected. Starting recording...");
+            microphone->setState(MicrophoneState::IDLE);
             webServerHandler->disableWiFiLightSleep();
-            microphone->startRecording(webSocketHandler, 0.3, RECORD_DURATION_MS);
+            microphone->startRecording(webSocketHandler, GAIN_VALUE, RECORD_DURATION_MS);
 
             // Wait for recording to finish
             while (MicrophoneState::RECORDING == microphone->getState()) {
@@ -80,10 +91,10 @@ void ListeningMode::processAudioData() {
             }
 
             Serial.println("Recording completed.");
-            microphone->reset();
-            microphone->setState(MicrophoneState::LISTENING);
-            webServerHandler->enableWiFiLightSleep();
-
+            if (systemStateManager->getMode() == SystemMode::AUTOMATIC) {
+                microphone->setState(MicrophoneState::LISTENING);
+                webServerHandler->enableWiFiLightSleep();
+            }
             // Post-recording cool-down
             vTaskDelay(3000 / portTICK_PERIOD_MS);
             if (microphone->getState() != MicrophoneState::LISTENING) {
@@ -107,10 +118,20 @@ float ListeningMode::calculateRMS(const int32_t *samples, size_t count) {
 
 void ListeningMode::listeningModeTask(void *parameter) {
     ListeningMode *listeningMode = static_cast<ListeningMode *>(parameter);
-    while (listeningMode->microphone->getState() == MicrophoneState::LISTENING) {
-        listeningMode->processAudioData();
+    while (true) {
+        if (listeningMode->systemStateManager->getMode() != SystemMode::AUTOMATIC) {
+            Serial.println("System mode changed. Exiting listening mode.");
+            break;
+        }
+
+        if (listeningMode->microphone->getState() == MicrophoneState::LISTENING) {
+            listeningMode->processAudioData();
+        } else {
+            // Wait for the microphone to return to LISTENING
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
     }
+
     Serial.println("Listening task terminated.");
-    listeningMode->microphone->setState(MicrophoneState::IDLE);
     vTaskDelete(NULL);
 }
