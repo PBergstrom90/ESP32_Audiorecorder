@@ -1,14 +1,16 @@
+// I2SMicrophone.h
 #ifndef I2S_MICROPHONE_H
 #define I2S_MICROPHONE_H
 
+#include <Arduino.h>
 #include <driver/i2s.h>
-#include "WebSocketHandler.h"
 #include "SystemStateManager.h"
 #include "config.h"
 
+// Forward declaration to avoid circular dependency
 class WebSocketHandler;
-class SystemStateManager;
 
+// Enumeration for Microphone States
 enum class MicrophoneState {
     IDLE,
     WARMUP,
@@ -19,28 +21,26 @@ enum class MicrophoneState {
 
 class I2SMicrophone {
 public:
-    I2SMicrophone();
-    MicrophoneState getState();
-    void setState(MicrophoneState state);
-    const char* getStateName(MicrophoneState state);
+    I2SMicrophone(SystemStateManager* mgr);
     void setup();
     size_t readAudioData(int32_t *buffer, size_t bufferSize);
-    void startRecording(WebSocketHandler *webSocket, float gain, uint32_t duration);
-    static void recordingTask(void *parameter);
-    void recoverFromError();
-    void warmUp();
+    void triggerRecording();
+    MicrophoneState getState();
+    void setState(MicrophoneState state);
     void reset();
+    void warmUp();
+    void recoverFromError();
     bool initializeHardware();
+    void setGainFactor(float gain);
+    float calculateRMS(const int32_t *samples, size_t count);
+    SystemStateManager* systemStateManager;
+    float gainFactor;
+    uint32_t recordDurationMs = RECORD_DURATION_MS;
+    bool manualRecordingRequested; 
 
 private:
-    float gainFactor = GAIN_VALUE; 
-    SemaphoreHandle_t stateMutex;
-    SemaphoreHandle_t i2sLock;
-    uint16_t recordDurationMs = RECORD_DURATION_MS; 
-    SystemStateManager *systemStateManager;
-    WebSocketHandler *webSocketHandler;
     MicrophoneState currentState;
-    TaskHandle_t recordingTaskHandle = NULL;
+    const char* getStateName(MicrophoneState state);
 };
 
 #endif // I2S_MICROPHONE_H

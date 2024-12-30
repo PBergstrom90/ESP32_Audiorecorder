@@ -11,7 +11,7 @@
 // Audio Configuration
 #define SAMPLE_RATE     16000   // Sampling Rate in Hz
 #define CHANNEL_COUNT   1       // Mono Audio
-#define BITS_PER_SAMPLE 16      // Bits per sample
+#define BITS_PER_SAMPLE 32      // Bits per sample
 #define RECORD_DURATION_MS 5000 // Recording Duration (5 seconds)
 #define GAIN_VALUE      0.3     // Default gain value
 #define NOISE_THRESHOLD 4.0     // Noise threshold
@@ -20,6 +20,7 @@
 #define SOCKET_PORT_NUMBER 443
 #define RECONNECT_INTERVAL 5000 // Milliseconds
 #define HOST_SOCKET_IP "192.168.50.30"
-#define WEBSOCKET_BUFFER_SIZE 1024
+#define WEBSOCKET_BUFFER_SIZE 1600
+#define MAX_PAYLOAD_SIZE 256
 
 #endif

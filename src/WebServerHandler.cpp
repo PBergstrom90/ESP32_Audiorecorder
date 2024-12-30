@@ -1,4 +1,10 @@
+// WebServerHandler.cpp
 #include "WebServerHandler.h"
+#include "I2SMicrophone.h"       // Included after forward declarations
+#include "WebSocketHandler.h"    // Included after forward declarations
+
+WebServerHandler::WebServerHandler(SystemStateManager *stateManager) 
+    : systemStateManager(stateManager) {}
 
 void WebServerHandler::addCORSHeaders(AsyncWebServerResponse *response) {
     response->addHeader("Access-Control-Allow-Origin", "*");
@@ -28,18 +34,19 @@ void WebServerHandler::disableWiFiLightSleep() {
 
 void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
     server.on("/start-record", HTTP_GET, [this, mic, ws](AsyncWebServerRequest *request) {
-        mic->startRecording(ws, GAIN_VALUE, RECORD_DURATION_MS); // Default 0.3 gain, 5 sec
+        mic->triggerRecording(); 
 
         AsyncWebServerResponse *response = request->beginResponse(200, "application/json", "{\"status\":\"recording started\"}");
         addCORSHeaders(response);
         request->send(response);
     });
 
-    server.on("/set-gain", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        String value;
+    server.on("/set-gain", HTTP_GET, [this, mic](AsyncWebServerRequest *request) {
         if (request->hasParam("value")) {
-            value = request->getParam("value")->value();
-            Serial.printf("Gain updated to: %s\n", value.c_str());
+            String value = request->getParam("value")->value();
+            float gain = value.toFloat();
+            mic->setGainFactor(gain);
+            Serial.printf("Gain updated to: %.2f\n", gain);
 
             AsyncWebServerResponse *response = request->beginResponse(200, "application/json", "{\"status\":\"gain updated\"}");
             addCORSHeaders(response);
@@ -51,52 +58,50 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
         }
     });
 
+    // Handle CORS preflight for /set-gain
     server.on("/set-gain", HTTP_OPTIONS, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(200);
         addCORSHeaders(response);
         request->send(response);
     });
 
-server.on("/toggle-mode", HTTP_GET, [this, ws](AsyncWebServerRequest *request) {
-    if (request->hasParam("mode")) {
-        String mode = request->getParam("mode")->value();
-        String responseMessage;
-        
-        if ((mode == "automatic" && systemStateManager.isAutomaticMode()) ||
-            (mode == "manual" && systemStateManager.isManualMode())) {
-            responseMessage = "MODE:confirmed";
-            request->send(200, "text/plain", responseMessage);
-            return;
-        }
-        if (mode == "automatic") {
-            systemStateManager.setMode(SystemMode::AUTOMATIC);
-            listeningMode.startListening();
-            responseMessage = "MODE:automatic";
-            ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket
-        } else if (mode == "manual") {
-            systemStateManager.setMode(SystemMode::MANUAL);
-            listeningMode.stopListening();
-            responseMessage = "MODE:manual";
-            ws->sendModeMessage(mode); // Send the mode confirmation via WebSocket
-        } else {
-            responseMessage = "ERROR:Invalid mode";
-            AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", responseMessage);
+    // Endpoint to toggle mode between AUTOMATIC and MANUAL
+    server.on("/toggle-mode", HTTP_GET, [this, ws, mic](AsyncWebServerRequest *request) {
+        if (request->hasParam("mode")) {
+            String mode = request->getParam("mode")->value();
+            String responseMessage;
+
+            if (mode == "automatic") {
+                systemStateManager->setMode(SystemMode::AUTOMATIC);
+                responseMessage = "MODE:automatic";
+                ws->sendModeMessage(mode); // Notify via WebSocket
+                Serial.println("System set to AUTOMATIC mode.");
+            } else if (mode == "manual") {
+                systemStateManager->setMode(SystemMode::MANUAL);
+                responseMessage = "MODE:manual";
+                ws->sendModeMessage(mode); // Notify via WebSocket
+                Serial.println("System set to MANUAL mode.");
+            } else {
+                responseMessage = "ERROR:Invalid mode";
+                AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", responseMessage);
+                addCORSHeaders(response);
+                request->send(response);
+                Serial.println("Invalid mode parameter received.");
+                return;
+            }
+
+            AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", responseMessage);
             addCORSHeaders(response);
             request->send(response);
-            Serial.println("Invalid mode parameter received.");
-            return;
+        } else {
+            AsyncWebServerResponse *response = request->beginResponse(400, "application/json", "{\"error\":\"Mode parameter missing.\"}");
+            addCORSHeaders(response);
+            request->send(response);
+            Serial.println("Mode parameter missing.");
         }
-        AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", responseMessage);
-        addCORSHeaders(response);
-        request->send(response);
-    } else {
-        AsyncWebServerResponse *response = request->beginResponse(400, "application/json", "{\"error\":\"Mode parameter missing.\"}");
-        addCORSHeaders(response);
-        request->send(response);
-        Serial.println("Mode parameter missing.");
-    }
-});
+    });
 
+    // Handle CORS preflight for /toggle-mode
     server.on("/toggle-mode", HTTP_OPTIONS, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(200);
         addCORSHeaders(response);

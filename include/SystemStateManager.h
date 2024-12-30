@@ -1,30 +1,20 @@
-#ifndef SYSTEMSTATEMANAGER_H
-#define SYSTEMSTATEMANAGER_H
+#ifndef SYSTEM_STATE_MANAGER_H
+#define SYSTEM_STATE_MANAGER_H
 
-#include <FreeRTOS.h>
-#include <freertos/semphr.h>
 #include <Arduino.h>
 
 enum class SystemMode {
-    MANUAL,
-    AUTOMATIC
+    AUTOMATIC,
+    MANUAL
 };
 
 class SystemStateManager {
-private:
-    SystemMode currentMode;
-    SemaphoreHandle_t stateMutex; 
-
 public:
     SystemStateManager();
-    ~SystemStateManager();
-
-    void setMode(SystemMode mode);
     SystemMode getMode();
-    const char* getModeName();
-
-    bool isAutomaticMode(); 
-    bool isManualMode();
+    void setMode(SystemMode mode);
+private:
+    SystemMode currentMode;
 };
 
-#endif // SYSTEMSTATEMANAGER_H
+#endif // SYSTEM_STATE_MANAGER_H
