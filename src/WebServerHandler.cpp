@@ -1,7 +1,4 @@
-// WebServerHandler.cpp
 #include "WebServerHandler.h"
-#include "I2SMicrophone.h"       // Included after forward declarations
-#include "WebSocketHandler.h"    // Included after forward declarations
 
 WebServerHandler::WebServerHandler(SystemStateManager *stateManager) 
     : systemStateManager(stateManager) {}
@@ -58,14 +55,14 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
         }
     });
 
-    // Handle CORS preflight for /set-gain
+    // Handle CORS preflight for /set-gain.
     server.on("/set-gain", HTTP_OPTIONS, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(200);
         addCORSHeaders(response);
         request->send(response);
     });
 
-    // Endpoint to toggle mode between AUTOMATIC and MANUAL
+    // Endpoint to toggle mode between AUTOMATIC and MANUAL.
     server.on("/toggle-mode", HTTP_GET, [this, ws, mic](AsyncWebServerRequest *request) {
         if (request->hasParam("mode")) {
             String mode = request->getParam("mode")->value();
@@ -74,12 +71,12 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
             if (mode == "automatic") {
                 systemStateManager->setMode(SystemMode::AUTOMATIC);
                 responseMessage = "MODE:automatic";
-                ws->sendModeMessage(mode); // Notify via WebSocket
+                ws->sendModeMessage(mode);
                 Serial.println("System set to AUTOMATIC mode.");
             } else if (mode == "manual") {
                 systemStateManager->setMode(SystemMode::MANUAL);
                 responseMessage = "MODE:manual";
-                ws->sendModeMessage(mode); // Notify via WebSocket
+                ws->sendModeMessage(mode);
                 Serial.println("System set to MANUAL mode.");
             } else {
                 responseMessage = "ERROR:Invalid mode";
@@ -101,7 +98,7 @@ void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
         }
     });
 
-    // Handle CORS preflight for /toggle-mode
+    // Handle CORS preflight for /toggle-mode.
     server.on("/toggle-mode", HTTP_OPTIONS, [this](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse(200);
         addCORSHeaders(response);

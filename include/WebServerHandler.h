@@ -7,6 +7,8 @@
 #include "config.h"
 #include "secrets.h"
 #include "SystemStateManager.h"
+#include "I2SMicrophone.h"
+#include "WebSocketHandler.h"
 
 class I2SMicrophone;
 class WebSocketHandler;
@@ -19,6 +21,7 @@ public:
     void begin(I2SMicrophone *mic, WebSocketHandler *ws);
     void enableWiFiLightSleep();
     void disableWiFiLightSleep();
+    bool isWiFiLightSleepEnabled();
 
 private:
     AsyncWebServer server{80};

@@ -1,4 +1,3 @@
-// I2SMicrophone.h
 #ifndef I2S_MICROPHONE_H
 #define I2S_MICROPHONE_H
 

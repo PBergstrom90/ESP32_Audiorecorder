@@ -1,7 +1,4 @@
 #include "WebSocketHandler.h"
-#include <LittleFS.h>
-#include "config.h"
-#include "secrets.h"
 
 WebSocketHandler::WebSocketHandler() 
     : currentState(WebSocketState::DISCONNECTED) {}
@@ -17,7 +14,6 @@ void WebSocketHandler::webSocketEvent(WStype_t type, uint8_t *payload, size_t le
         case WStype_DISCONNECTED:
             currentState = WebSocketState::DISCONNECTED;
             Serial.println("WebSocket disconnected from server.");
-            Serial.println("Reconnecting...");
             reconnect();
             break;
 

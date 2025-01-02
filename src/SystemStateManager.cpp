@@ -1,5 +1,4 @@
 #include "SystemStateManager.h"
-#include <Arduino.h>
 
 SystemStateManager::SystemStateManager() 
     : currentMode(SystemMode::MANUAL) {

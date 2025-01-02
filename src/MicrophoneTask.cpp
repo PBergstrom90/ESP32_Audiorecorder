@@ -1,14 +1,14 @@
 #include "MicrophoneTask.h"
 #include <esp_task_wdt.h>
 
-MicrophoneTask::MicrophoneTask(I2SMicrophone* micPtr, WebSocketHandler* wsPtr)
-    : mic(micPtr), ws(wsPtr), taskHandle(NULL) {}
+MicrophoneTask::MicrophoneTask(I2SMicrophone* micPtr, WebSocketHandler* wsPtr, WebServerHandler* wsHandler)
+    : mic(micPtr), websocket(wsPtr), webServerHandler(wsHandler), taskHandle(NULL) {}
 
 void MicrophoneTask::begin() {
     xTaskCreatePinnedToCore(
         MicrophoneTask::taskFunction,       // Task function
         "MicControllerTask",                // Task name
-        12288,                               // Stack size (adjust as needed)
+        12288,                              // Stack size (adjust as needed)
         this,                               // Parameter (pointer to this instance)
         2,                                  // Priority
         &taskHandle,                        // Task handle
@@ -56,7 +56,7 @@ void MicrophoneTask::run() {
                 Serial.println("Manual recording requested. Starting recording...");
                 performRecording();
             }
-            vTaskDelay(100 / portTICK_PERIOD_MS);
+                vTaskDelay(100 / portTICK_PERIOD_MS);
         }
     }
     // Feed the watchdog
@@ -70,7 +70,7 @@ void MicrophoneTask::performRecording() {
     mic->setState(MicrophoneState::RECORDING);
     i2s_start(I2S_NUM_0);
     Serial.println("Recording...");
-    ws->sendStartMessage();
+    websocket->sendStartMessage();
 
     unsigned long start = millis();
     Serial.println("Recording loop started.");
@@ -86,14 +86,14 @@ void MicrophoneTask::performRecording() {
                 memcpy(&frameBuffer[idx], &sample16, sizeof(sample16));
                 idx += 2;
             }
-            ws->sendAudioData(frameBuffer, idx);
+            websocket->sendAudioData(frameBuffer, idx);
             vTaskDelay(5 / portTICK_PERIOD_MS); // Delay to avoid overloading the WebSocket
         }
     }
     i2s_stop(I2S_NUM_0);
-    ws->sendEndMessage();
+    websocket->sendEndMessage();
     Serial.println("Recording finished.");
     mic->reset();
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay to avoid immediate recording
     mic->setState(MicrophoneState::IDLE);
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay to avoid immediate recording
 }

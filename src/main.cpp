@@ -11,7 +11,7 @@ SystemStateManager systemStateManager; // System state manager
 I2SMicrophone microphone(&systemStateManager); // I2S Microphone handler
 WebSocketHandler webSocketHandler;  // WebSocket handler
 WebServerHandler webServerHandler(&systemStateManager);  // Web server handler
-MicrophoneTask microphoneTask(&microphone, &webSocketHandler);  // Microphone task
+MicrophoneTask microphoneTask(&microphone, &webSocketHandler, &webServerHandler);  // Microphone task
 
 void setup() {
     Serial.begin(115200);
