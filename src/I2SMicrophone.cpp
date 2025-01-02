@@ -132,10 +132,9 @@ void I2SMicrophone::warmUp() {
     Serial.println("Warming up microphone...");
     int32_t sampleBuffer[64] = {0};
 
-    for (int i = 0; i < 10; i++) { // WARM_UP_PASSES = 10
+    for (int i = 0; i < WARM_UP_PASSES; i++) {
         memset(sampleBuffer, 0, sizeof(sampleBuffer));
         size_t bytesRead = readAudioData(sampleBuffer, sizeof(sampleBuffer));
-        Serial.printf("Warm-up pass %d: %d bytes read\n", i + 1, bytesRead);
         if (bytesRead == 0) {
             Serial.println("ERROR: Warm-up failed. Hardware not responding.");
             setState(MicrophoneState::ERROR);
