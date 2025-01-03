@@ -21,6 +21,9 @@ enum class WebSocketState {
 class WebSocketHandler {
 public:
     WebSocketHandler();
+    String ca_cert_str;
+    String client_cert_str;
+    String client_key_str;
     void begin();
     void loop();
     void reconnect();
@@ -29,10 +32,6 @@ public:
     void sendEndMessage();
     void sendModeMessage(const String &mode);
     void readCertFile(const char *path, String &dest);
-    String ca_cert_str;
-    String client_cert_str;
-    String client_key_str;
-
 
 private:
     WebSocketsClient webSocket;

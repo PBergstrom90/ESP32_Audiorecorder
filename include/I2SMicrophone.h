@@ -21,10 +21,14 @@ enum class MicrophoneState {
 class I2SMicrophone {
 public:
     I2SMicrophone(SystemStateManager* mgr);
-    void setup();
-    size_t readAudioData(int32_t *buffer, size_t bufferSize);
-    void triggerRecording();
     MicrophoneState getState();
+    SystemStateManager* systemStateManager;
+    size_t readAudioData(int32_t *buffer, size_t bufferSize);
+    float gainFactor;
+    uint32_t recordDurationMs = RECORD_DURATION_MS;
+    bool manualRecordingRequested; 
+    void setup();
+    void triggerRecording();
     void setState(MicrophoneState state);
     void reset();
     void warmUp();
@@ -32,10 +36,6 @@ public:
     bool initializeHardware();
     void setGainFactor(float gain);
     float calculateRMS(const int32_t *samples, size_t count);
-    SystemStateManager* systemStateManager;
-    float gainFactor;
-    uint32_t recordDurationMs = RECORD_DURATION_MS;
-    bool manualRecordingRequested; 
 
 private:
     MicrophoneState currentState;

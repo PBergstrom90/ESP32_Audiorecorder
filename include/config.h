@@ -5,7 +5,7 @@
 #define I2S_WS          15      // Word Select Pin
 #define I2S_SD          13      // Serial Data Pin
 #define I2S_SCK         2       // Serial Clock Pin
-#define I2S_PORT        I2S_NUM_0
+#define I2S_PORT        I2S_NUM_0 // I2S Port Number
 #define WARM_UP_PASSES  10      // Number of warm-up passes
 
 // Audio Configuration
@@ -19,7 +19,7 @@
 // WebSocket Configuration
 #define SOCKET_PORT_NUMBER 443
 #define RECONNECT_INTERVAL 5000 // Milliseconds
-#define HOST_SOCKET_IP "192.168.50.221"
+#define HOST_SOCKET_IP "192.168.50.221" // IP for the server
 #define WEBSOCKET_BUFFER_SIZE 1600
 #define MAX_PAYLOAD_SIZE 256
 

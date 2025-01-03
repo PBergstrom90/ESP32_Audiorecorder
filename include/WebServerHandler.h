@@ -19,9 +19,6 @@ public:
     void addCORSHeaders(AsyncWebServerResponse *response);
     void connectToWiFi();
     void begin(I2SMicrophone *mic, WebSocketHandler *ws);
-    void enableWiFiLightSleep();
-    void disableWiFiLightSleep();
-    bool isWiFiLightSleepEnabled();
 
 private:
     AsyncWebServer server{80};

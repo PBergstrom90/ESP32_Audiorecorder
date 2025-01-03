@@ -19,16 +19,6 @@ void WebServerHandler::connectToWiFi() {
     Serial.println("\nWiFi connected. IP: " + WiFi.localIP().toString());
 }
 
-void WebServerHandler::enableWiFiLightSleep() {
-    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
-    Serial.println("Wi-Fi light sleep enabled.");
-}
-
-void WebServerHandler::disableWiFiLightSleep() {
-    esp_wifi_set_ps(WIFI_PS_NONE);
-    Serial.println("Wi-Fi light sleep disabled.");
-}
-
 void WebServerHandler::begin(I2SMicrophone *mic, WebSocketHandler *ws) {
     server.on("/start-record", HTTP_GET, [this, mic, ws](AsyncWebServerRequest *request) {
         mic->triggerRecording(); 
