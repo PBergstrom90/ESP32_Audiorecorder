@@ -141,9 +141,10 @@ Manages secure WebSocket communication, handles TLS certificates, and sends audi
 
 ## Future Improvements
 
-- Implement "Wifi Light Sleep" functionality to save power.
-- Implement dynamic configuration and more audiooptions through a web UI.
-- Enhance error recovery mechanisms.
+- **Power Efficiency**: Implement "WiFi Light Sleep" to minimize power consumption during idle periods.
+- **Dynamic Configuration**: Enhance the web UI to support additional audio settings, including sampling rate, recording duration, and file format, alongside the existing gain adjustment.
+- **Error Handling**: Strengthen recovery mechanisms to address issues like microphone disconnection, WebSocket failures, and hardware resets more effectively.
+- **Extended Features**: Add real-time audio visualization, such as waveforms, during recording to improve user interaction and feedback.
 
 ## License
 
