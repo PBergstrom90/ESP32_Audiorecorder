@@ -2,6 +2,8 @@
 
 This project implements an audio recording system using an ESP32 microcontroller. It utilizes an I2S microphone for audio input, processes audio data, and transmits it securely via WebSocket to a server. The system supports both automatic and manual recording modes.
 
+This project is built to connect with the Docker_Audiorecorder, which can be found in this repository: [Docker_Audiorecorder](https://github.com/PBergstrom90/Docker_Audiorecorder).
+
 ## Features
 
 - **Audio Recording**:
@@ -145,4 +147,4 @@ Manages secure WebSocket communication, handles TLS certificates, and sends audi
 
 ## License
 
-- This project is licensed under the MIT License. See the LICENSE file for details.
+[MIT License](LICENSE)
