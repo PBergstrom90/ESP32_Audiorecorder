@@ -65,7 +65,7 @@ This project is built to connect with the Docker_Audiorecorder, which can be fou
 
 ### WebSocket Configuration
 
-- Server IP: `192.168.50.221`
+- Server IP: `192.168.50.221` (Internal IP, change as needed)
 - Port: `443`
 - Reconnect Interval: 5000 ms
 - Buffer Size: 1600 bytes
